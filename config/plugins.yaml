@@ -10,6 +10,14 @@ analysts:
   news: tradingagents.plugins.analysts.news.NewsAnalyst
   sentiment: tradingagents.plugins.analysts.sentiment.SentimentAnalyst
 
+# 交易员插件配置
+traders:
+  basic: tradingagents.plugins.trader.basic_trader.BasicTrader
+
+# 图引擎插件配置
+graph_engine:
+  default: tradingagents.plugins.graph.default_engine.DefaultGraphEngine
+
 # 策略插件配置
 strategies:
   conservative: tradingagents.plugins.strategies.conservative.ConservativeStrategy

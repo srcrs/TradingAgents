@@ -195,16 +195,32 @@ class TradingAgentsGraph:
         else:
             final_state = self.graph.invoke(init_agent_state, **args)
 
-        # 使用策略插件执行最终决策
-        if strategy_plugin:
-            analysis_reports = [
-                final_state["market_report"],
-                final_state["sentiment_report"],
-                final_state["news_report"],
-                final_state["fundamentals_report"]
-            ]
+        # 加载交易员插件
+        trader_plugin = None
+        try:
+            if "traders" in self.config and "basic" in self.config["traders"]:
+                trader_class = registry.get_plugin("traders", "basic")
+                trader_plugin = trader_class(llm=self.quick_thinking_llm)
+        except Exception as e:
+            print(f"加载交易员插件失败: {e}")
+
+        # 执行决策
+        analysis_reports = [
+            final_state["market_report"],
+            final_state["sentiment_report"],
+            final_state["news_report"],
+            final_state["fundamentals_report"]
+        ]
+        
+        if trader_plugin:
+            context = {"company": company_name, "date": trade_date}
+            final_decision = trader_plugin.make_decision(analysis_reports, context)
+        elif strategy_plugin:  # 回退到旧策略系统
             final_decision = strategy_plugin.execute(analysis_reports)
-            final_state["final_trade_decision"] = final_decision
+        else:
+            final_decision = "无法生成交易决策：未配置有效插件"
+
+        final_state["final_trade_decision"] = final_decision
 
         # 存储状态用于反思
         self.curr_state = final_state
