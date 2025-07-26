@@ -1,0 +1,17 @@
+# 数据源插件配置
+data_sources:
+  finnhub: tradingagents.plugins.data.finnhub.FinnHubSource
+  yfinance: tradingagents.plugins.data.yfinance.YFinanceSource
+
+# 分析插件配置
+analysts:
+  technical: tradingagents.plugins.analysts.technical.TechnicalAnalyst
+  fundamental: tradingagents.plugins.analysts.fundamental.FundamentalAnalyst
+  news: tradingagents.plugins.analysts.news.NewsAnalyst
+  sentiment: tradingagents.plugins.analysts.sentiment.SentimentAnalyst
+
+# 策略插件配置
+strategies:
+  conservative: tradingagents.plugins.strategies.conservative.ConservativeStrategy
+  aggressive: tradingagents.plugins.strategies.aggressive.AggressiveStrategy
+  neutral: tradingagents.plugins.strategies.neutral.NeutralStrategy
