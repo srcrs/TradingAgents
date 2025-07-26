@@ -109,8 +109,19 @@ class TradingAgentsGraph:
         self.ticker = None
         self.log_states_dict = {}  # date to full state dict
 
-        # Set up the graph
-        self.graph = self.graph_setup.setup_graph(selected_analysts)
+        # 加载图引擎插件
+        self.graph_engine = None
+        try:
+            if "graph_engine" in self.config and "default" in self.config["graph_engine"]:
+                engine_class = registry.get_plugin("graph_engine", "default")
+                self.graph_engine = engine_class()
+                self.graph = self.graph_engine.build_graph(self.graph_setup)
+            else:
+                # 回退到原始图构建方式
+                self.graph = self.graph_setup.setup_graph(selected_analysts)
+        except Exception as e:
+            print(f"加载图引擎失败: {e}")
+            self.graph = self.graph_setup.setup_graph(selected_analysts)
 
     def _create_tool_nodes(self) -> Dict[str, ToolNode]:
         """动态创建工具节点，基于插件配置"""
