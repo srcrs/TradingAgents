@@ -1,0 +1,15 @@
+jobs:
+  # 示例任务1 - 日常分析
+  - job_id: daily_analysis
+    ticker: VOO
+    date: "2025-07-27"
+    analysts:
+      - market
+      - social
+      - news
+    research_depth: 3
+    llm_provider: openrouter
+    backend_url: "https://openrouter.ai/api/v1"
+    shallow_thinker: "qwen/qwen3-coder:free"
+    deep_thinker: "qwen/qwen3-coder:free"
+    online_tools: true

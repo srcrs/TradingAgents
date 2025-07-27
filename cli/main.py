@@ -731,9 +731,22 @@ def extract_content_string(content):
     else:
         return str(content)
 
-def run_analysis():
-    # First get all user selections
-    selections = get_user_selections()
+def run_analysis(params: dict = None):
+    """
+    运行交易代理分析流程
+    
+    参数:
+        params: 可选，参数字典。如果提供则跳过交互式选择
+    """
+    if params:
+        # 使用传入参数
+        selections = params
+        console.print(f"[bold green]参数化执行模式启动[/bold green]")
+        console.print(f"▷ 股票: {selections['ticker']}")
+        console.print(f"▷ 日期: {selections['analysis_date']}")
+    else:
+        # 原有交互式逻辑
+        selections = get_user_selections()
 
     # Create config with selected research depth
     config = DEFAULT_CONFIG.copy()
@@ -1102,4 +1115,11 @@ def analyze():
 
 
 if __name__ == "__main__":
-    app()
+    # 支持配置执行模式
+    if len(sys.argv) > 1 and sys.argv[1].endswith('.yaml'):
+        console.print("[bold]配置文件执行模式[/bold]")
+        from cli.job_runner import run_jobs
+        run_jobs(sys.argv[1])
+    else:
+        # 默认交互模式
+        app()

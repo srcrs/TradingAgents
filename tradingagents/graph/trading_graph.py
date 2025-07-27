@@ -67,10 +67,20 @@ class TradingAgentsGraph:
             if not openrouter_key:
                 raise ValueError("OpenRouter API key missing. Set OPENROUTER_API_KEY env var")
 
-            # 添加OpenRouter所需的认证头
+            # 从配置或环境变量获取来源信息
+            referer = self.config.get(
+                "openrouter_referer", 
+                os.getenv("OPENROUTER_REFERER", "http://localhost")
+            )
+            title = self.config.get(
+                "openrouter_title",
+                os.getenv("OPENROUTER_TITLE", "TradingAgents")
+            )
+            
+            # 构建认证头
             headers = {
-                "HTTP-Referer": "http://localhost",  # 本地开发用
-                "X-Title": "TradingAgents",         # 应用名称
+                "HTTP-Referer": referer,
+                "X-Title": title,
                 "Authorization": f"Bearer {openrouter_key}"
             }
 
@@ -307,11 +317,12 @@ class TradingAgentsGraph:
         # Save to file
         directory = Path(f"eval_results/{self.ticker}/TradingAgentsStrategy_logs/")
         directory.mkdir(parents=True, exist_ok=True)
-
-        with open(
-            f"eval_results/{self.ticker}/TradingAgentsStrategy_logs/full_states_log_{trade_date}.json",
-            "w",
-        ) as f:
+        
+        # 确保文件名使用字符串日期
+        filename = f"full_states_log_{trade_date}.json"
+        filepath = directory / filename
+        
+        with open(filepath, "w") as f:
             json.dump(self.log_states_dict, f, indent=4)
 
     def reflect_and_remember(self, returns_losses):

@@ -126,7 +126,8 @@ export OPENAI_API_KEY=$YOUR_OPENAI_API_KEY
 
 ### CLI Usage
 
-You can also try out the CLI directly by running:
+#### Interactive Mode
+Run the CLI in interactive mode:
 ```bash
 python -m cli.main
 ```
@@ -135,6 +136,73 @@ You will see a screen where you can select your desired tickers, date, LLMs, res
 <p align="center">
   <img src="assets/cli/cli_init.png" width="100%" style="display: inline-block; margin: 0 2%;">
 </p>
+
+#### Batch Execution with Configuration File
+For automated batch processing, create a YAML configuration file:
+
+1. Create `config/trading_jobs.yaml`:
+```yaml
+jobs:
+  - job_id: daily_analysis
+    ticker: VOO
+    date: 2025-07-27
+    analysts:
+      - market
+      - social
+      - news
+    research_depth: 2
+    llm_provider: openrouter
+    backend_url: "https://openrouter.ai/api/v1"
+    shallow_thinker: "gpt-4.1-mini"
+    deep_thinker: "o1-preview"
+    online_tools: true
+
+  - job_id: weekly_strategy
+    ticker: SPY
+    date: 2025-07-28
+    analysts:
+      - fundamentals
+    research_depth: 3
+    llm_provider: openai
+    backend_url: "https://api.openai.com/v1"
+    shallow_thinker: "gpt-3.5-turbo"
+    deep_thinker: "gpt-4"
+    online_tools: false
+```
+
+2. Execute all jobs:
+```bash
+python -m cli.job_runner config/trading_jobs.yaml
+```
+
+3. Output example:
+```
+Loading to 2 jobs
+
+──────────────────────────────────── Task 1/2 (daily_analysis) ────────────────────────────────────
+
+🚀 开始任务: daily_analysis
+▷ 股票: VOO
+▷ 日期: 2025-07-27
+▷ 分析模块: market, social, news
+▷ 研究深度: 2
+...
+✓ 任务 daily_analysis 完成 (耗时: 125.32s)
+
+──────────────────────────────────── Task 2/2 (weekly_strategy) ────────────────────────────────────
+
+🚀 开始任务: weekly_strategy
+▷ 股票: SPY
+▷ 日期: 2025-07-28
+▷ 分析模块: fundamentals
+▷ 研究深度: 3
+...
+✓ 任务 weekly_strategy 完成 (耗时: 183.75s)
+
+任务完成汇总: 2 成功, 0 失败
+```
+
+> Tip: Use this mode for backtesting and scheduled analysis tasks.
 
 An interface will appear showing results as they load, letting you track the agent's progress as it runs.
 
