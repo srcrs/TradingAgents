@@ -1,7 +1,7 @@
 # 数据源插件配置
 data_sources:
   finnhub: tradingagents.plugins.data.finnhub.FinnHubSource
-  yfinance: tradingagents.plugins.data.yfinance.YFinanceSource
+  # yfinance: tradingagents.plugins.data.yfinance.YFinanceSource
 
 # 分析插件配置
 analysts:

@@ -62,8 +62,30 @@ class TradingAgentsGraph:
 
         # Initialize LLMs
         if self.config["llm_provider"].lower() == "openai" or self.config["llm_provider"] == "ollama" or self.config["llm_provider"] == "openrouter":
-            self.deep_thinking_llm = ChatOpenAI(model=self.config["deep_think_llm"], base_url=self.config["backend_url"])
-            self.quick_thinking_llm = ChatOpenAI(model=self.config["quick_think_llm"], base_url=self.config["backend_url"])
+            # 获取OpenRouter API密钥
+            openrouter_key = self.config.get("openrouter_api_key") or os.getenv("OPENROUTER_API_KEY")
+            if not openrouter_key:
+                raise ValueError("OpenRouter API key missing. Set OPENROUTER_API_KEY env var")
+
+            # 添加OpenRouter所需的认证头
+            headers = {
+                "HTTP-Referer": "http://localhost",  # 本地开发用
+                "X-Title": "TradingAgents",         # 应用名称
+                "Authorization": f"Bearer {openrouter_key}"
+            }
+
+            self.deep_thinking_llm = ChatOpenAI(
+                model=self.config["deep_think_llm"],
+                openai_api_key=openrouter_key,
+                base_url="https://openrouter.ai/api/v1",
+                default_headers=headers
+            )
+            self.quick_thinking_llm = ChatOpenAI(
+                model=self.config["quick_think_llm"],
+                openai_api_key=openrouter_key,
+                base_url="https://openrouter.ai/api/v1",
+                default_headers=headers
+            )
         elif self.config["llm_provider"].lower() == "anthropic":
             self.deep_thinking_llm = ChatAnthropic(model=self.config["deep_think_llm"], base_url=self.config["backend_url"])
             self.quick_thinking_llm = ChatAnthropic(model=self.config["quick_think_llm"], base_url=self.config["backend_url"])
@@ -146,10 +168,16 @@ class TradingAgentsGraph:
                     plugin_class = getattr(module, class_name)
                     plugin_instance = plugin_class()
                     
-                    # 包装为ToolNode兼容函数
+                    # 包装为ToolNode兼容函数并添加文档字符串
                     def plugin_wrapper(ticker, start_date, end_date, data_type=analyst_type, instance=plugin_instance):
+                        """使用{name}数据源获取{data_type}分析所需的数据"""
                         return instance.fetch_data(ticker, start_date, end_date, data_type)
                     
+                    # 设置函数文档（动态插入插件名称）
+                    plugin_wrapper.__doc__ = plugin_wrapper.__doc__.format(
+                        name=name, 
+                        data_type=analyst_type
+                    )
                     tools.append(plugin_wrapper)
             
             # 添加分析插件
@@ -160,10 +188,15 @@ class TradingAgentsGraph:
                 plugin_class = getattr(module, class_name)
                 plugin_instance = plugin_class()
                 
-                # 包装为ToolNode兼容函数
+                # 包装为ToolNode兼容函数并添加文档字符串
                 def analyst_wrapper(data, instance=plugin_instance):
+                    """使用{analyst_type}分析插件处理数据"""
                     return instance.analyze(data)
                 
+                # 设置函数文档（动态插入分析类型）
+                analyst_wrapper.__doc__ = analyst_wrapper.__doc__.format(
+                    analyst_type=analyst_type
+                )
                 tools.append(analyst_wrapper)
             
             # 如果配置了插件，则创建ToolNode

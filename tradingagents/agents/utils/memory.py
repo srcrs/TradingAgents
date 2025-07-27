@@ -3,68 +3,35 @@ from chromadb.config import Settings
 from openai import OpenAI
 
 
+from .bm25_memory import PersistentBM25Memory
+
 class FinancialSituationMemory:
+    """基于BM25算法的记忆系统，替代原向量检索方案"""
+    
     def __init__(self, name, config):
-        if config["backend_url"] == "http://localhost:11434/v1":
-            self.embedding = "nomic-embed-text"
-        else:
-            self.embedding = "text-embedding-3-small"
-        self.client = OpenAI(base_url=config["backend_url"])
-        self.chroma_client = chromadb.Client(Settings(allow_reset=True))
-        self.situation_collection = self.chroma_client.create_collection(name=name)
-
-    def get_embedding(self, text):
-        """Get OpenAI embedding for a text"""
+        """
+        初始化记忆系统
+        :param name: 记忆名称，用于数据库文件名
+        :param config: 配置字典
+        """
+        self.memory = PersistentBM25Memory(f"{name}_memory.db")
         
-        response = self.client.embeddings.create(
-            model=self.embedding, input=text
-        )
-        return response.data[0].embedding
-
     def add_situations(self, situations_and_advice):
-        """Add financial situations and their corresponding advice. Parameter is a list of tuples (situation, rec)"""
-
-        situations = []
-        advice = []
-        ids = []
-        embeddings = []
-
-        offset = self.situation_collection.count()
-
-        for i, (situation, recommendation) in enumerate(situations_and_advice):
-            situations.append(situation)
-            advice.append(recommendation)
-            ids.append(str(offset + i))
-            embeddings.append(self.get_embedding(situation))
-
-        self.situation_collection.add(
-            documents=situations,
-            metadatas=[{"recommendation": rec} for rec in advice],
-            embeddings=embeddings,
-            ids=ids,
-        )
-
+        """
+        添加情景与建议
+        :param situations_and_advice: [(情景描述, 建议), ...]
+        """
+        for situation, recommendation in situations_and_advice:
+            self.memory.add_memory(situation, recommendation)
+    
     def get_memories(self, current_situation, n_matches=1):
-        """Find matching recommendations using OpenAI embeddings"""
-        query_embedding = self.get_embedding(current_situation)
-
-        results = self.situation_collection.query(
-            query_embeddings=[query_embedding],
-            n_results=n_matches,
-            include=["metadatas", "documents", "distances"],
-        )
-
-        matched_results = []
-        for i in range(len(results["documents"][0])):
-            matched_results.append(
-                {
-                    "matched_situation": results["documents"][0][i],
-                    "recommendation": results["metadatas"][0][i]["recommendation"],
-                    "similarity_score": 1 - results["distances"][0][i],
-                }
-            )
-
-        return matched_results
+        """
+        检索相似记忆
+        :param current_situation: 当前情景描述
+        :param n_matches: 返回结果数量
+        :return: 匹配的记忆记录列表
+        """
+        return self.memory.query(current_situation, top_n=n_matches)
 
 
 if __name__ == "__main__":
