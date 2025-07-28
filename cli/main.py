@@ -1,4 +1,5 @@
 from typing import Optional
+import sys
 import datetime
 import typer
 from pathlib import Path
@@ -1110,8 +1111,24 @@ def run_analysis(params: dict = None):
 
 
 @app.command()
-def analyze():
-    run_analysis()
+def analyze(
+    ticker: str = typer.Argument(..., help="Ticker symbol to analyze"),
+    date: str = typer.Argument(..., help="Analysis date in YYYY-MM-DD format"),
+):
+    """
+    Run analysis for a specific ticker and date
+    """
+    params = {
+        "ticker": ticker,
+        "analysis_date": date,
+        "analysts": [AnalystType.MARKET, AnalystType.SOCIAL, AnalystType.NEWS],
+        "research_depth": 3,
+        "llm_provider": "openai",
+        "backend_url": None,
+        "shallow_thinker": "gpt-3.5-turbo",
+        "deep_thinker": "gpt-4-turbo",
+    }
+    run_analysis(params)
 
 
 if __name__ == "__main__":

@@ -10,16 +10,31 @@ def create_market_analyst(llm, toolkit):
         ticker = state["company_of_interest"]
         company_name = state["company_of_interest"]
 
+        # 绑定所有可用的工具
+        tools = [
+            toolkit.get_reddit_news,
+            toolkit.get_finnhub_news,
+            toolkit.get_reddit_stock_info,
+            toolkit.get_YFin_data,
+            toolkit.get_YFin_data_online,
+            toolkit.get_stockstats_indicators_report,
+            toolkit.get_stockstats_indicators_report_online,
+            toolkit.get_finnhub_company_insider_sentiment,
+            toolkit.get_finnhub_company_insider_transactions,
+            toolkit.get_simfin_balance_sheet,
+            toolkit.get_simfin_cashflow,
+            toolkit.get_simfin_income_stmt,
+            toolkit.get_google_news,
+            toolkit.get_stock_news_openai,
+            toolkit.get_global_news_openai,
+            toolkit.get_fundamentals_openai,
+        ]
+        
+        # 根据配置选择在线/离线工具
         if toolkit.config["online_tools"]:
-            tools = [
-                toolkit.get_YFin_data_online,
-                toolkit.get_stockstats_indicators_report_online,
-            ]
+            tools = [t for t in tools if "online" in t.name]
         else:
-            tools = [
-                toolkit.get_YFin_data,
-                toolkit.get_stockstats_indicators_report,
-            ]
+            tools = [t for t in tools if "online" not in t.name]
 
         system_message = (
             """You are a trading assistant tasked with analyzing financial markets. Your role is to select the **most relevant indicators** for a given market condition or trading strategy from the following list. The goal is to choose up to **8 indicators** that provide complementary insights without redundancy. Categories and each category's indicators are:

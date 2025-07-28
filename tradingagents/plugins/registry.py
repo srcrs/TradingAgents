@@ -1,7 +1,9 @@
 PLUGIN_REGISTRY = {
     "data_sources": {},
     "analysts": {},
-    "strategies": {}
+    "strategies": {},
+    "traders": {},
+    "graph_engine": {}
 }
 
 def register_plugin(plugin_type: str, name: str, plugin_class):
@@ -9,12 +11,12 @@ def register_plugin(plugin_type: str, name: str, plugin_class):
     注册插件到全局注册表
     
     参数:
-        plugin_type: 插件类型 ('data_sources', 'analysts', 'strategies')
+        plugin_type: 插件类型 ('data_sources', 'analysts', 'strategies', 'traders', 'graph_engine')
         name: 插件唯一标识名
         plugin_class: 插件类
     """
     if plugin_type not in PLUGIN_REGISTRY:
-        raise ValueError(f"无效的插件类型: {plugin_type}. 必须是: {list(PLUGIN_REGISTRY.keys())}")
+        PLUGIN_REGISTRY[plugin_type] = {}
     
     PLUGIN_REGISTRY[plugin_type][name] = plugin_class
 

@@ -1,8 +1,8 @@
 jobs:
   # 示例任务1 - 日常分析
   - job_id: daily_analysis
-    ticker: VOO
-    date: "2025-07-27"
+    ticker: XAUUSD
+    date: "2025-07-28"
     analysts:
       - market
       - social
@@ -12,4 +12,4 @@ jobs:
     backend_url: "https://openrouter.ai/api/v1"
     shallow_thinker: "qwen/qwen3-coder:free"
     deep_thinker: "qwen/qwen3-coder:free"
-    online_tools: true
+    online_tools: false

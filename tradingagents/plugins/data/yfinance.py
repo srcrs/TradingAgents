@@ -3,6 +3,7 @@ from tradingagents.core.interface import DataSource
 from tradingagents.plugins import registry
 from datetime import datetime, timedelta
 import pandas as pd
+from typing import Dict, Any  # 添加类型注解
 
 class YFinanceSource(DataSource):
     def fetch_data(self, ticker: str, start_date: str, end_date: str, data_type: str) -> Dict[str, Any]:

@@ -8,11 +8,10 @@ DEFAULT_CONFIG = {
         os.path.abspath(os.path.join(os.path.dirname(__file__), ".")),
         "dataflows/data_cache",
     ),
-    # LLM settings
-    "llm_provider": "openai",
-    "deep_think_llm": "o4-mini",
-    "quick_think_llm": "gpt-4o-mini",
-    "backend_url": "https://api.openai.com/v1",
+    # LLM settings - 切换到 OpenRouter
+    "llm_provider": "openrouter",
+    "llm_model": "qwen/qwen3-coder:free",
+    "backend_url": "https://openrouter.ai/api/v1",
     # Debate and discussion settings
     "max_debate_rounds": 1,
     "max_risk_discuss_rounds": 1,
