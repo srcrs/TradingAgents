@@ -1,3 +1,4 @@
+from typing import List
 from tradingagents.core.interface import TradingStrategy
 from tradingagents.plugins import registry
 from langchain_core.prompts import ChatPromptTemplate
