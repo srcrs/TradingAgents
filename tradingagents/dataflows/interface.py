@@ -704,104 +704,80 @@ def get_YFin_data(
 
 def get_stock_news_openai(ticker, curr_date):
     config = get_config()
-    client = OpenAI(base_url=config["backend_url"])
+    client = OpenAI(base_url=config["backend_url"], api_key=os.getenv("OPENROUTER_API_KEY", "sk-no-key-required"))
 
-    response = client.responses.create(
-        model=config["quick_think_llm"],
-        input=[
-            {
-                "role": "system",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": f"Can you search Social Media for {ticker} from 7 days before {curr_date} to {curr_date}? Make sure you only get the data posted during that period.",
-                    }
-                ],
-            }
-        ],
-        text={"format": {"type": "text"}},
-        reasoning={},
-        tools=[
-            {
-                "type": "web_search_preview",
-                "user_location": {"type": "approximate"},
-                "search_context_size": "low",
-            }
-        ],
-        temperature=1,
-        max_output_tokens=4096,
-        top_p=1,
-        store=True,
-    )
-
-    return response.output[1].content[0].text
+    try:
+        response = client.chat.completions.create(
+            model=config["llm_model"],
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"Search Social Media for {ticker} from 7 days before {curr_date} to {curr_date}. Make sure you only get the data posted during that period."
+                }
+            ],
+            temperature=1,
+            max_tokens=4096,
+            top_p=1,
+        )
+        
+        if hasattr(response, 'choices') and len(response.choices) > 0:
+            return response.choices[0].message.content
+        else:
+            return f"No social media data found for {ticker} from 7 days before {curr_date} to {curr_date}"
+    except Exception as e:
+        print(f"Error getting stock news for {ticker}: {e}")
+        return f"Error retrieving social media data for {ticker}: {str(e)}"
 
 
 def get_global_news_openai(curr_date):
     config = get_config()
-    client = OpenAI(base_url=config["backend_url"])
+    client = OpenAI(base_url=config["backend_url"], api_key=os.getenv("OPENROUTER_API_KEY", "sk-no-key-required"))
 
-    response = client.responses.create(
-        model=config["quick_think_llm"],
-        input=[
-            {
-                "role": "system",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": f"Can you search global or macroeconomics news from 7 days before {curr_date} to {curr_date} that would be informative for trading purposes? Make sure you only get the data posted during that period.",
-                    }
-                ],
-            }
-        ],
-        text={"format": {"type": "text"}},
-        reasoning={},
-        tools=[
-            {
-                "type": "web_search_preview",
-                "user_location": {"type": "approximate"},
-                "search_context_size": "low",
-            }
-        ],
-        temperature=1,
-        max_output_tokens=4096,
-        top_p=1,
-        store=True,
-    )
-
-    return response.output[1].content[0].text
+    try:
+        response = client.chat.completions.create(
+            model=config["llm_model"],
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"Search global or macroeconomics news from 7 days before {curr_date} to {curr_date} that would be informative for trading purposes. Make sure you only get the data posted during that period."
+                }
+            ],
+            temperature=1,
+            max_tokens=4096,
+            top_p=1,
+        )
+        
+        if hasattr(response, 'choices') and len(response.choices) > 0:
+            return response.choices[0].message.content
+        else:
+            return f"No global news data found from 7 days before {curr_date} to {curr_date}"
+    except Exception as e:
+        print(f"Error getting global news: {e}")
+        return f"Error retrieving global news data: {str(e)}"
 
 
 def get_fundamentals_openai(ticker, curr_date):
     config = get_config()
-    client = OpenAI(base_url=config["backend_url"])
+    client = OpenAI(base_url=config["backend_url"], api_key=os.getenv("OPENROUTER_API_KEY", "sk-no-key-required"))
 
-    response = client.responses.create(
-        model=config["quick_think_llm"],
-        input=[
-            {
-                "role": "system",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": f"Can you search Fundamental for discussions on {ticker} during of the month before {curr_date} to the month of {curr_date}. Make sure you only get the data posted during that period. List as a table, with PE/PS/Cash flow/ etc",
-                    }
-                ],
-            }
-        ],
-        text={"format": {"type": "text"}},
-        reasoning={},
-        tools=[
-            {
-                "type": "web_search_preview",
-                "user_location": {"type": "approximate"},
-                "search_context_size": "low",
-            }
-        ],
-        temperature=1,
-        max_output_tokens=4096,
-        top_p=1,
-        store=True,
-    )
-
-    return response.output[1].content[0].text
+    try:
+        response = client.chat.completions.create(
+            model=config["llm_model"],
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"Search Fundamental for discussions on {ticker} during of the month before {curr_date} to the month of {curr_date}. Make sure you only get the data posted during that period. List as a table, with PE/PS/Cash flow/ etc"
+                }
+            ],
+            temperature=1,
+            max_tokens=4096,
+            top_p=1,
+        )
+        
+        if hasattr(response, 'choices') and len(response.choices) > 0:
+            return response.choices[0].message.content
+        else:
+            return f"No fundamental data found for {ticker} from the month before {curr_date} to the month of {curr_date}"
+    except Exception as e:
+        print(f"Error getting fundamentals for {ticker}: {e}")
+        return f"Error retrieving fundamental data for {ticker}: {str(e)}"
