@@ -2,7 +2,6 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 import time
 import json
 
-
 def create_market_analyst(llm, toolkit):
 
     def market_analyst_node(state):
@@ -74,13 +73,23 @@ Volume-Based Indicators:
 
         chain = prompt | llm.bind_tools(tools)
 
-        result = chain.invoke(state["messages"])
+        try:
+            result = chain.invoke(state["messages"])
+        except Exception as e:
+            import traceback
+            error_msg = f"Market analysis failed: {str(e)}\n{traceback.format_exc()}"
+            return {
+                "messages": [AIMessage(content=error_msg)],
+                "market_report": error_msg
+            }
 
         report = ""
 
         if len(result.tool_calls) == 0:
             report = result.content
-       
+        else:
+            report = f"Tool calls detected but not handled: {result.tool_calls}"
+
         return {
             "messages": [result],
             "market_report": report,
