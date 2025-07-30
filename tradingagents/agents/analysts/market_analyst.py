@@ -75,20 +75,17 @@ Volume-Based Indicators:
 
         try:
             result = chain.invoke(state["messages"])
+            # 成功时创建report
+            if len(result.tool_calls) == 0:
+                report = result.content
+            else:
+                report = f"Tool calls detected but not handled: {result.tool_calls}"
         except Exception as e:
             import traceback
             error_msg = f"Market analysis failed: {str(e)}\n{traceback.format_exc()}"
-            return {
-                "messages": [AIMessage(content=error_msg)],
-                "market_report": error_msg
-            }
-
-        report = ""
-
-        if len(result.tool_calls) == 0:
-            report = result.content
-        else:
-            report = f"Tool calls detected but not handled: {result.tool_calls}"
+            # 创建AIMessage对象而不是直接使用字符串
+            result = AIMessage(content=error_msg)
+            report = error_msg
 
         return {
             "messages": [result],
