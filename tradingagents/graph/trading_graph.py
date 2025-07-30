@@ -22,8 +22,7 @@ from tradingagents.agents.utils.agent_states import (
     RiskDebateState,
 )
 from tradingagents.dataflows.interface import set_config
-from tradingagents.core.interface import DataSource, AnalystModule, TradingStrategy  # 添加接口导入
-from tradingagents.plugins import registry  # 添加插件注册表
+from tradingagents.core.interface import DataSource, AnalystModule, TradingStrategy
 
 from .conditional_logic import ConditionalLogic
 from .setup import GraphSetup
@@ -141,99 +140,60 @@ class TradingAgentsGraph:
         self.ticker = None
         self.log_states_dict = {}  # date to full state dict
 
-        # 加载图引擎插件
-        self.graph_engine = None
-        try:
-            if "graph_engine" in self.config and "default" in self.config["graph_engine"]:
-                engine_class = registry.get_plugin("graph_engine", "default")
-                self.graph_engine = engine_class()
-                self.graph = self.graph_engine.build_graph(self.graph_setup)
-            else:
-                # 回退到原始图构建方式
-                self.graph = self.graph_setup.setup_graph(selected_analysts)
-        except Exception as e:
-            print(f"加载图引擎失败: {e}")
-            self.graph = self.graph_setup.setup_graph(selected_analysts)
+        # 直接使用原始图构建方式
+        self.graph = self.graph_setup.setup_graph(selected_analysts)
 
     def _create_tool_nodes(self) -> Dict[str, ToolNode]:
-        """动态创建工具节点，基于插件配置"""
-        tool_nodes = {}
-        
-        # 加载插件配置
-        try:
-            with open('config/plugins.yaml', 'r') as f:
-                plugins_config = yaml.safe_load(f)
-        except:
-            plugins_config = {}
-        
-        # 为每种分析类型创建工具节点
-        for analyst_type in ["market", "social", "news", "fundamentals"]:
-            tools = []
-            
-            # 添加数据源插件
-            if "data_sources" in plugins_config:
-                for name, class_path in plugins_config["data_sources"].items():
-                    module_name, class_name = class_path.rsplit('.', 1)
-                    module = __import__(module_name, fromlist=[class_name])
-                    plugin_class = getattr(module, class_name)
-                    plugin_instance = plugin_class()
-                    
-                    # 包装为ToolNode兼容函数并添加文档字符串
-                    def plugin_wrapper(ticker, start_date, end_date, data_type=analyst_type, instance=plugin_instance):
-                        """使用{name}数据源获取{data_type}分析所需的数据"""
-                        return instance.fetch_data(ticker, start_date, end_date, data_type)
-                    
-                    # 设置函数文档（动态插入插件名称）
-                    plugin_wrapper.__doc__ = plugin_wrapper.__doc__.format(
-                        name=name, 
-                        data_type=analyst_type
-                    )
-                    tools.append(plugin_wrapper)
-            
-            # 添加分析插件
-            if analyst_type in plugins_config.get("analysts", {}):
-                class_path = plugins_config["analysts"][analyst_type]
-                module_name, class_name = class_path.rsplit('.', 1)
-                module = __import__(module_name, fromlist=[class_name])
-                plugin_class = getattr(module, class_name)
-                plugin_instance = plugin_class()
-                
-                # 包装为ToolNode兼容函数并添加文档字符串
-                def analyst_wrapper(data, instance=plugin_instance):
-                    """使用{analyst_type}分析插件处理数据"""
-                    return instance.analyze(data)
-                
-                # 设置函数文档（动态插入分析类型）
-                analyst_wrapper.__doc__ = analyst_wrapper.__doc__.format(
-                    analyst_type=analyst_type
-                )
-                tools.append(analyst_wrapper)
-            
-            # 如果配置了插件，则创建ToolNode
-            if tools:
-                tool_nodes[analyst_type] = ToolNode(tools)
-        
-        return tool_nodes
+        """Create tool nodes for different data sources."""
+        return {
+            "market": ToolNode(
+                [
+                    # online tools
+                    self.toolkit.get_YFin_data_online,
+                    self.toolkit.get_stockstats_indicators_report_online,
+                    # offline tools
+                    self.toolkit.get_YFin_data,
+                    self.toolkit.get_stockstats_indicators_report,
+                ]
+            ),
+            "social": ToolNode(
+                [
+                    # online tools
+                    self.toolkit.get_stock_news_openai,
+                    # offline tools
+                    self.toolkit.get_reddit_stock_info,
+                ]
+            ),
+            "news": ToolNode(
+                [
+                    # online tools
+                    self.toolkit.get_global_news_openai,
+                    self.toolkit.get_google_news,
+                    # offline tools
+                    self.toolkit.get_finnhub_news,
+                    self.toolkit.get_reddit_news,
+                ]
+            ),
+            "fundamentals": ToolNode(
+                [
+                    # online tools
+                    self.toolkit.get_fundamentals_openai,
+                    # offline tools
+                    self.toolkit.get_finnhub_company_insider_sentiment,
+                    self.toolkit.get_finnhub_company_insider_transactions,
+                    self.toolkit.get_simfin_balance_sheet,
+                    self.toolkit.get_simfin_cashflow,
+                    self.toolkit.get_simfin_income_stmt,
+                ]
+            ),
+        }
 
     def propagate(self, company_name, trade_date):
         """运行交易代理图"""
         self.ticker = company_name
 
-        # 加载策略插件
+        # 策略插件已移除
         strategy_plugin = None
-        try:
-            with open('config/plugins.yaml', 'r') as f:
-                plugins_config = yaml.safe_load(f)
-                if "strategies" in plugins_config:
-                    # 使用配置中的第一个策略
-                    strategy_name = next(iter(plugins_config["strategies"]))
-                    class_path = plugins_config["strategies"][strategy_name]
-                    module_name, class_name = class_path.rsplit('.', 1)
-                    module = __import__(module_name, fromlist=[class_name])
-                    strategy_class = getattr(module, class_name)
-                    strategy_plugin = strategy_class()
-        except:
-            pass
 
         # 初始化状态
         init_agent_state = self.propagator.create_initial_state(company_name, trade_date)
@@ -249,30 +209,8 @@ class TradingAgentsGraph:
         else:
             final_state = self.graph.invoke(init_agent_state, **args)
 
-        # 加载交易员插件
-        trader_plugin = None
-        try:
-            if "traders" in self.config and "basic" in self.config["traders"]:
-                trader_class = registry.get_plugin("traders", "basic")
-                trader_plugin = trader_class(llm=self.quick_thinking_llm)
-        except Exception as e:
-            print(f"加载交易员插件失败: {e}")
-
-        # 执行决策
-        analysis_reports = [
-            final_state["market_report"],
-            final_state["sentiment_report"],
-            final_state["news_report"],
-            final_state["fundamentals_report"]
-        ]
-        
-        if trader_plugin:
-            context = {"company": company_name, "date": trade_date}
-            final_decision = trader_plugin.make_decision(analysis_reports, context)
-        elif strategy_plugin:  # 回退到旧策略系统
-            final_decision = strategy_plugin.execute(analysis_reports)
-        else:
-            final_decision = "无法生成交易决策：未配置有效插件"
+        # 直接使用交易员节点生成决策
+        final_decision = final_state["trader_investment_plan"]
 
         final_state["final_trade_decision"] = final_decision
 
