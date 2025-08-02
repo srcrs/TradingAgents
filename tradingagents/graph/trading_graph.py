@@ -22,7 +22,6 @@ from tradingagents.agents.utils.agent_states import (
     RiskDebateState,
 )
 from tradingagents.dataflows.interface import set_config
-from tradingagents.core.interface import DataSource, AnalystModule, TradingStrategy
 
 from .conditional_logic import ConditionalLogic
 from .setup import GraphSetup
@@ -38,7 +37,7 @@ class TradingAgentsGraph:
         self,
         selected_analysts=["market", "social", "news", "fundamentals"],
         debug=False,
-        config: Dict[str, Any] = None,
+        config=None,
     ):
         """Initialize the trading agents graph and components.
 
@@ -191,9 +190,6 @@ class TradingAgentsGraph:
     def propagate(self, company_name, trade_date):
         """运行交易代理图"""
         self.ticker = company_name
-
-        # 策略插件已移除
-        strategy_plugin = None
 
         # 初始化状态
         init_agent_state = self.propagator.create_initial_state(company_name, trade_date)

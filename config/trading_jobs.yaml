@@ -1,13 +1,14 @@
 jobs:
   # 示例任务1 - 日常分析
-  - job_id: daily_analysis
-    ticker: XAUUSD
-    date: "2025-07-28"
+  - job_id: daily_analysis_qqq
+    ticker: QQQ
+    date: "2025-07-31"
     analysts:
       - market
       - social
       - news
-    research_depth: 3
+      - fundamentals
+    research_depth: 5
     llm_provider: openrouter
     backend_url: "https://openrouter.ai/api/v1"
     shallow_thinker: "qwen/qwen3-coder:free"
